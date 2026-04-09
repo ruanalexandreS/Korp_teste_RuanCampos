@@ -1,0 +1,36 @@
+<div style="padding: 24px; max-width: 600px">
+    <h2>Nova Nota Fiscal</h2>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+        <div formArrayName="items">
+            <div *ngFor="let item of items.controls; let i = index" [formGroupName]="i"
+                style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px">
+
+                <mat-form-field appearance="outline" style="flex: 2">
+                    <mat-label>Produto</mat-label>
+                    <mat-select formControlName="productId">
+                        <mat-option *ngFor="let p of products" [value]="p.id">
+                            {{ p.code }} — {{ p.description }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" style="flex: 1">
+                    <mat-label>Quantidade</mat-label>
+                    <input matInput type="number" formControlName="quantity" />
+                </mat-form-field>
+
+                <button mat-icon-button type="button" color="warn" (click)="removeItem(i)">✕</button>
+            </div>
+        </div>
+
+        <button mat-stroked-button type="button" (click)="addItem()" style="margin-bottom: 16px">
+            + Adicionar Produto
+        </button>
+
+        <div style="display: flex; gap: 12px">
+            <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Salvar</button>
+            <button mat-button type="button" routerLink="/invoices">Cancelar</button>
+        </div>
+    </form>
+</div>
