@@ -1,0 +1,39 @@
+# ===== Node / npm =====
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json.bak
+
+# ===== Angular =====
+.angular/
+dist/
+.sass-cache/
+
+# ===== Env files =====
+.env
+.env.local
+.env.*.local
+
+# ===== .NET build artifacts =====
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ===== IDEs =====
+.vs/
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+
+# ===== System files =====
+.DS_Store
+Thumbs.db
