@@ -15,7 +15,7 @@ import { InvoiceService, Invoice } from '../../shared/services/invoice.service';
 })
 export class InvoiceListComponent implements OnInit {
   invoices: Invoice[] = [];
-  displayedColumns = ['number', 'status', 'actions'];
+  displayedColumns = ['number', 'status', 'items', 'actions'];
   loading = false;
   error = '';
 
