@@ -1,42 +1,60 @@
-<div style="padding: 24px">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
-        <h2>Notas Fiscais</h2>
-        <a mat-raised-button color="primary" routerLink="/invoices/new">Nova Nota</a>
+<div class="page-container">
+    <div class="page-header">
+        <h1>Notas Fiscais</h1>
+        <a mat-raised-button color="primary" routerLink="/invoices/new">+ Nova Nota</a>
     </div>
 
-    <div *ngIf="error" style="color: red; margin-bottom: 12px">{{ error }}</div>
+    <mat-card *ngIf="error" style="margin-bottom: 16px; background: #ffebee">
+        <mat-card-content style="color: #c62828">{{ error }}</mat-card-content>
+    </mat-card>
 
-    <table mat-table [dataSource]="invoices" style="width: 100%">
-        <ng-container matColumnDef="number">
-            <th mat-header-cell *matHeaderCellDef>Número</th>
-            <td mat-cell *matCellDef="let inv">{{ inv.number }}</td>
-        </ng-container>
+    <mat-card>
+        <mat-card-content>
+            <table mat-table [dataSource]="invoices" style="width: 100%">
+                <ng-container matColumnDef="number">
+                    <th mat-header-cell *matHeaderCellDef>Número</th>
+                    <td mat-cell *matCellDef="let inv">
+                        <strong>NF-{{ inv.number | number:'3.0' }}</strong>
+                    </td>
+                </ng-container>
 
-        <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let inv">{{ inv.status }}</td>
-        </ng-container>
+                <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>Status</th>
+                    <td mat-cell *matCellDef="let inv">
+                        <span [style.background]="inv.status === 'Aberta' ? '#e8f5e9' : '#eeeeee'"
+                            [style.color]="inv.status === 'Aberta' ? '#2e7d32' : '#616161'"
+                            style="padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500">
+                            {{ inv.status }}
+                        </span>
+                    </td>
+                </ng-container>
 
-        <ng-container matColumnDef="items">
-            <th mat-header-cell *matHeaderCellDef>Produtos</th>
-            <td mat-cell *matCellDef="let inv">
-                <span *ngFor="let item of inv.items; let last = last">
-                    {{ item.productDescription }} (x{{ item.quantity }})<span *ngIf="!last">, </span>
-                </span>
-            </td>
-        </ng-container>
+                <ng-container matColumnDef="items">
+                    <th mat-header-cell *matHeaderCellDef>Produtos</th>
+                    <td mat-cell *matCellDef="let inv">
+                        <span *ngFor="let item of inv.items; let last = last">
+                            {{ item.productDescription }} (x{{ item.quantity }})<span *ngIf="!last">, </span>
+                        </span>
+                    </td>
+                </ng-container>
 
-        <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Ações</th>
-            <td mat-cell *matCellDef="let inv">
-                <button mat-raised-button color="accent" [disabled]="inv.status !== 'Aberta' || loading"
-                    (click)="print(inv.id)">
-                    {{ loading ? 'Imprimindo...' : 'Imprimir' }}
-                </button>
-            </td>
-        </ng-container>
+                <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef>Ações</th>
+                    <td mat-cell *matCellDef="let inv">
+                        <button mat-raised-button color="accent" [disabled]="inv.status !== 'Aberta' || loading"
+                            (click)="print(inv.id)">
+                            {{ loading ? 'Imprimindo...' : 'Imprimir' }}
+                        </button>
+                    </td>
+                </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-    </table>
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+            </table>
+
+            <p *ngIf="invoices.length === 0" style="text-align: center; padding: 32px; color: #888">
+                Nenhuma nota fiscal cadastrada.
+            </p>
+        </mat-card-content>
+    </mat-card>
 </div>

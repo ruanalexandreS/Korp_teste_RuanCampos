@@ -3,13 +3,21 @@ import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
 import { RouterModule } from '@angular/router';
 import { InvoiceService, Invoice } from '../../shared/services/invoice.service';
 
 @Component({
   selector: 'app-invoice-list',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatButtonModule, MatIconModule, RouterModule],
+  imports: [
+    CommonModule,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatCardModule,
+    RouterModule,
+  ],
   templateUrl: './invoice-list.component.html',
   styleUrl: './invoice-list.component.scss',
 })
