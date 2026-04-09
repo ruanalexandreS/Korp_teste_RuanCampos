@@ -34,12 +34,35 @@ app.MapPost("/products", async (Product product, AppDbContext db) =>
 // PUT /products/{id}/balance
 app.MapPut("/products/{id}/balance", async (int id, int quantity, AppDbContext db) =>
 {
-    var product = await db.Products.FindAsync(id);
-    if (product is null) return Results.NotFound();
-    if (product.Balance < quantity) return Results.BadRequest("Saldo insuficiente.");
-    product.Balance -= quantity;
-    await db.SaveChangesAsync();
-    return Results.Ok(product);
+    await using var transaction = await db.Database.BeginTransactionAsync();
+    try
+    {
+        var product = await db.Products
+            .FromSqlRaw("SELECT * FROM \"Products\" WHERE \"Id\" = {0} FOR UPDATE", id)
+            .FirstOrDefaultAsync();
+
+        if (product is null)
+        {
+            await transaction.RollbackAsync();
+            return Results.NotFound();
+        }
+
+        if (product.Balance < quantity)
+        {
+            await transaction.RollbackAsync();
+            return Results.BadRequest("Saldo insuficiente.");
+        }
+
+        product.Balance -= quantity;
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return Results.Ok(product);
+    }
+    catch
+    {
+        await transaction.RollbackAsync();
+        return Results.Problem("Erro ao atualizar saldo.");
+    }
 });
 
 app.Run();

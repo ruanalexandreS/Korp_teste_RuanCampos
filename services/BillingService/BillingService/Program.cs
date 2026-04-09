@@ -18,6 +18,8 @@ var app = builder.Build();
 
 app.UseCors();
 
+var idempotencyCache = new System.Collections.Concurrent.ConcurrentDictionary<string, bool>();
+
 // GET /invoices
 app.MapGet("/invoices", async (AppDbContext db) =>
     await db.Invoices.Include(i => i.Items).ToListAsync());
@@ -39,8 +41,17 @@ app.MapPost("/invoices", async (Invoice invoice, AppDbContext db) =>
 });
 
 // POST /invoices/{id}/print
-app.MapPost("/invoices/{id}/print", async (int id, AppDbContext db, IHttpClientFactory httpClientFactory) =>
+app.MapPost("/invoices/{id}/print", async (int id, HttpContext ctx, AppDbContext db, IHttpClientFactory httpClientFactory) =>
 {
+    var idempotencyKey = ctx.Request.Headers["Idempotency-Key"].FirstOrDefault();
+    
+    if (!string.IsNullOrEmpty(idempotencyKey))
+    {
+        if (idempotencyCache.ContainsKey(idempotencyKey))
+            return Results.Ok("Requisição já processada.");
+        idempotencyCache.TryAdd(idempotencyKey, true);
+    }
+
     var invoice = await db.Invoices.Include(i => i.Items).FirstOrDefaultAsync(i => i.Id == id);
     if (invoice is null) return Results.NotFound();
     if (invoice.Status != "Aberta") return Results.BadRequest("Nota já foi impressa.");
@@ -56,10 +67,16 @@ app.MapPost("/invoices/{id}/print", async (int id, AppDbContext db, IHttpClientF
                 null);
 
             if (!response.IsSuccessStatusCode)
+            {
+                if (!string.IsNullOrEmpty(idempotencyKey))
+                    idempotencyCache.TryRemove(idempotencyKey, out _);
                 return Results.BadRequest($"Saldo insuficiente para o produto {item.ProductCode}.");
+            }
         }
         catch
         {
+            if (!string.IsNullOrEmpty(idempotencyKey))
+                idempotencyCache.TryRemove(idempotencyKey, out _);
             return Results.Problem("Serviço de estoque indisponível. Tente novamente.");
         }
     }
