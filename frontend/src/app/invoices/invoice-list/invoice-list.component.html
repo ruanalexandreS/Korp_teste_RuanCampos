@@ -57,4 +57,11 @@
             </p>
         </mat-card-content>
     </mat-card>
+
+    <mat-card *ngIf="aiSummary" style="margin-bottom: 16px; background: #e8f5e9">
+        <mat-card-content style="display: flex; align-items: center; gap: 12px">
+            <span style="font-size: 20px">✨</span>
+            <span style="color: #2e7d32">{{ aiSummary }}</span>
+        </mat-card-content>
+    </mat-card>
 </div>

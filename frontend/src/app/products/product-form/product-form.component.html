@@ -1,25 +1,40 @@
-<div style="padding: 24px; max-width: 480px">
-    <h2>Novo Produto</h2>
+<div class="page-container" style="max-width: 480px">
+    <div class="page-header">
+        <h1>Novo Produto</h1>
+    </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()">
-        <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 12px">
-            <mat-label>Código</mat-label>
-            <input matInput formControlName="code" />
-        </mat-form-field>
+    <mat-card>
+        <mat-card-content style="padding: 24px">
+            <form [formGroup]="form" (ngSubmit)="submit()">
 
-        <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 12px">
-            <mat-label>Descrição</mat-label>
-            <input matInput formControlName="description" />
-        </mat-form-field>
+                <div style="display: flex; gap: 8px; align-items: flex-start">
+                    <mat-form-field appearance="outline" style="flex: 1">
+                        <mat-label>Código</mat-label>
+                        <input matInput formControlName="code" />
+                    </mat-form-field>
+                    <button mat-stroked-button type="button" style="margin-top: 4px; height: 56px"
+                        [disabled]="!form.get('code')?.value || loadingAi" (click)="suggestDescription()">
+                        {{ loadingAi ? '...' : '✨ Sugerir' }}
+                    </button>
+                </div>
 
-        <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 12px">
-            <mat-label>Saldo</mat-label>
-            <input matInput type="number" formControlName="balance" />
-        </mat-form-field>
+                <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 12px">
+                    <mat-label>Descrição</mat-label>
+                    <input matInput formControlName="description" />
+                    <mat-hint *ngIf="loadingAi">IA gerando sugestão...</mat-hint>
+                </mat-form-field>
 
-        <div style="display: flex; gap: 12px">
-            <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Salvar</button>
-            <button mat-button type="button" routerLink="/products">Cancelar</button>
-        </div>
-    </form>
+                <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 12px">
+                    <mat-label>Saldo</mat-label>
+                    <input matInput type="number" min="0" step="1" formControlName="balance" />
+                </mat-form-field>
+
+                <div style="display: flex; gap: 12px">
+                    <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Salvar</button>
+                    <button mat-button type="button" routerLink="/products">Cancelar</button>
+                </div>
+
+            </form>
+        </mat-card-content>
+    </mat-card>
 </div>
