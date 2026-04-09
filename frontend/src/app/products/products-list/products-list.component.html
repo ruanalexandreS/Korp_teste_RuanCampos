@@ -4,6 +4,13 @@
         <a mat-raised-button color="primary" routerLink="/products/new">+ Novo Produto</a>
     </div>
 
+    <mat-card *ngIf="stockAlert" style="margin-bottom: 16px; background: #fff3e0">
+        <mat-card-content style="display: flex; align-items: center; gap: 12px">
+            <span style="font-size: 20px">⚠️</span>
+            <span style="color: #e65100">{{ stockAlert }}</span>
+        </mat-card-content>
+    </mat-card>
+
     <mat-card>
         <mat-card-content>
             <table mat-table [dataSource]="products" style="width: 100%">

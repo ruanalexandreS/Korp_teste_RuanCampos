@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { RouterModule } from '@angular/router';
 import { ProductService, Product } from '../../shared/services/product.service';
+import { AiService } from '../../shared/services/ai.services';
 
 @Component({
   selector: 'app-products-list',
@@ -24,9 +25,11 @@ import { ProductService, Product } from '../../shared/services/product.service';
 export class ProductsListComponent implements OnInit {
   products: Product[] = [];
   displayedColumns = ['code', 'description', 'balance'];
+  stockAlert = '';
 
   constructor(
     private productService: ProductService,
+    private aiService: AiService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -34,6 +37,15 @@ export class ProductsListComponent implements OnInit {
     this.productService.getAll().subscribe({
       next: (data) => {
         this.products = data;
+        const alert$ = this.aiService.checkLowStock(data);
+        if (alert$) {
+          alert$.subscribe({
+            next: (alert) => {
+              this.stockAlert = alert;
+              this.cdr.detectChanges();
+            },
+          });
+        }
         this.cdr.detectChanges();
       },
       error: () => (this.products = []),

@@ -68,4 +68,34 @@ export class AiService {
       )
       .pipe(map((res) => res.choices[0].message.content.trim()));
   }
+
+  checkLowStock(products: any[]) {
+    const lowStock = products.filter((p) => p.balance <= 5);
+    if (lowStock.length === 0) return null;
+
+    const productsText = lowStock.map((p) => `${p.description} (saldo: ${p.balance})`).join(', ');
+
+    return this.http
+      .post<any>(
+        this.url,
+        {
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'user',
+              content: `Você é um assistente de controle de estoque. Os seguintes produtos estão com saldo baixo (5 ou menos unidades): ${productsText}. 
+        Gere um alerta curto e direto em português recomendando reposição. Máximo 2 frases.`,
+            },
+          ],
+          max_tokens: 100,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      .pipe(map((res) => res.choices[0].message.content.trim()));
+  }
 }
