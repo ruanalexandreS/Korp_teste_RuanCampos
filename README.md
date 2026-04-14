@@ -2,8 +2,8 @@
 | | |
 |---|---|
 | 🌐 **Frontend** | https://korp-teste-ruan-campos.vercel.app |
-| ⚙️ **StockService (Swagger)** | https://<seu-stock.railway.app>/swagger |
-| 🧾 **BillingService (Swagger)** | https://<seu-billing.railway.app>/swagger |
+| ⚙️ **StockService (Swagger)** | https://korpstockdb-production.up.railway.app/swagger |
+| 🧾 **BillingService (Swagger)** | https://korpbillingdb-production.up.railway.app/swagger |
 
 # Korp NF — Sistema de Emissão de Notas Fiscais
 
