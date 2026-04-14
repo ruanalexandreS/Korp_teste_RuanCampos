@@ -35,6 +35,12 @@
                 </div>
 
             </form>
+
+            <div *ngIf="alertMessage" class="custom-alert" [ngClass]="alertType">
+                <span>{{ alertMessage }}</span>
+                <button mat-button (click)="alertMessage = null">Fechar</button>
+            </div>
+
         </mat-card-content>
     </mat-card>
 </div>

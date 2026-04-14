@@ -8,6 +8,7 @@ package-lock.json.bak
 .angular/
 dist/
 .sass-cache/
+.claude/
 
 # ===== Env files =====
 .env
@@ -33,6 +34,10 @@ obj/
 !.vscode/launch.json
 !.vscode/extensions.json
 !.vscode/mcp.json
+**/appsettings.Development.json
+**/appsettings.*.json
+!**/appsettings.json
+
 
 # ===== System files =====
 .DS_Store

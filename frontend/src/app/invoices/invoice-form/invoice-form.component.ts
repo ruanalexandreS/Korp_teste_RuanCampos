@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterModule, Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { InvoiceService } from '../../shared/services/invoice.service';
 import { ProductService, Product } from '../../shared/services/product.service';
 
@@ -24,9 +25,10 @@ import { ProductService, Product } from '../../shared/services/product.service';
   templateUrl: './invoice-form.component.html',
   styleUrl: './invoice-form.component.scss',
 })
-export class InvoiceFormComponent implements OnInit {
+export class InvoiceFormComponent implements OnInit, OnDestroy {
   products: Product[] = [];
   form;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private fb: FormBuilder,
@@ -40,7 +42,7 @@ export class InvoiceFormComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.productService.getAll().subscribe((data) => (this.products = data));
+    this.productService.getAll().pipe(takeUntil(this.destroy$)).subscribe((data) => (this.products = data));
     this.addItem();
   }
 
@@ -72,8 +74,13 @@ export class InvoiceFormComponent implements OnInit {
         quantity: c.value.quantity,
       };
     });
-    this.invoiceService.create({ items }).subscribe(() => {
+    this.invoiceService.create({ items }).pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.router.navigate(['/invoices']);
     });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

@@ -1,15 +1,30 @@
 using Microsoft.EntityFrameworkCore;
 using StockService.Data;
 using StockService.Models;
+using StockService.Services;
+
+AppContext.SetSwitch("System.Net.Sockets.IPAddress.IPv6IsNotSupported", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddHttpClient<IGroqService, GroqService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
+});
+
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+        policy
+            .WithOrigins(
+                "https://korp-teste-ruan-campos.vercel.app",
+                "http://localhost:4200"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .WithExposedHeaders("*")));
 
 var app = builder.Build();
 
@@ -26,6 +41,10 @@ app.MapGet("/products/{id}", async (int id, AppDbContext db) =>
 // POST /products
 app.MapPost("/products", async (Product product, AppDbContext db) =>
 {
+    var exists = await db.Products.AnyAsync(p => p.Code == product.Code);
+    if (exists)
+        return Results.Conflict(new { error = $"Já existe um produto com o código '{product.Code}'" });
+
     db.Products.Add(product);
     await db.SaveChangesAsync();
     return Results.Created($"/products/{product.Id}", product);
@@ -65,4 +84,56 @@ app.MapPut("/products/{id}/balance", async (int id, int quantity, AppDbContext d
     }
 });
 
+// POST /api/products/suggest-description
+app.MapPost("/products", async (Product product, AppDbContext db) =>
+{
+    if (string.IsNullOrWhiteSpace(product.Code))
+        return Results.BadRequest(new { error = "Código é obrigatório." });
+
+    if (string.IsNullOrWhiteSpace(product.Description))
+        return Results.BadRequest(new { error = "Descrição é obrigatória." });
+
+    if (product.Balance < 0)
+        return Results.BadRequest(new { error = "Saldo não pode ser negativo." });
+
+    var exists = await db.Products.AnyAsync(p => p.Code == product.Code);
+    if (exists)
+        return Results.Conflict(new { error = $"Já existe um produto com o código '{product.Code}'" });
+
+    db.Products.Add(product);
+    await db.SaveChangesAsync();
+    return Results.Created($"/products/{product.Id}", product);
+});
+
+// POST /api/products/check-low-stock
+app.MapPost("/api/products/check-low-stock", async (CheckLowStockRequest request, IGroqService groqService, ILogger<Program> logger) =>
+{
+    if (request?.Products is null || request.Products.Count == 0)
+        return Results.BadRequest(new { error = "Lista de produtos é obrigatória." });
+
+    try
+    {
+        var lines = string.Join("\n", request.Products.Select(p =>
+            $"- {p.Code} | {p.Description} | saldo: {p.Balance}"));
+
+        var prompt = "Você é um assistente de gestão de estoque. Analise a lista de produtos abaixo e identifique aqueles com saldo baixo (considere baixo quando menor ou igual a 5). " +
+                     "Gere um alerta curto e objetivo em português sugerindo reposição apenas dos produtos com saldo baixo. " +
+                     "Se nenhum produto estiver com saldo baixo, responda apenas: \"Estoque em níveis adequados.\". " +
+                     "Não inclua explicações adicionais.\n\nProdutos:\n" + lines;
+
+        var alert = await groqService.GenerateAsync(prompt);
+        return Results.Ok(new { alert });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Erro ao verificar estoque baixo via IA");
+        return Results.Problem("Não foi possível verificar o estoque no momento. Tente novamente mais tarde.", statusCode: 500);
+    }
+});
+
 app.Run();
+
+public record SuggestDescriptionRequest(string Code);
+
+public record CheckLowStockProduct(string Code, string Description, int Balance);
+public record CheckLowStockRequest(List<CheckLowStockProduct> Products);

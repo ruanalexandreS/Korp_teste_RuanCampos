@@ -1,10 +1,11 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { RouterModule } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { ProductService, Product } from '../../shared/services/product.service';
 import { AiService } from '../../shared/services/ai.services';
 
@@ -22,10 +23,11 @@ import { AiService } from '../../shared/services/ai.services';
   templateUrl: './products-list.component.html',
   styleUrl: './products-list.component.scss',
 })
-export class ProductsListComponent implements OnInit {
+export class ProductsListComponent implements OnInit, OnDestroy {
   products: Product[] = [];
   displayedColumns = ['code', 'description', 'balance'];
   stockAlert = '';
+  private destroy$ = new Subject<void>();
 
   constructor(
     private productService: ProductService,
@@ -34,12 +36,12 @@ export class ProductsListComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.productService.getAll().subscribe({
+    this.productService.getAll().pipe(takeUntil(this.destroy$)).subscribe({
       next: (data) => {
         this.products = data;
         const alert$ = this.aiService.checkLowStock(data);
         if (alert$) {
-          alert$.subscribe({
+          alert$.pipe(takeUntil(this.destroy$)).subscribe({
             next: (alert) => {
               this.stockAlert = alert;
               this.cdr.detectChanges();
@@ -50,5 +52,10 @@ export class ProductsListComponent implements OnInit {
       },
       error: () => (this.products = []),
     });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

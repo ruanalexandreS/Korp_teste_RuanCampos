@@ -1,5 +1,5 @@
 export const environment = {
-    production: false,
-    stockServiceUrl: 'http://localhost:5263',
-    billingServiceUrl: 'http://localhost:5199'
+  production: true,
+  stockServiceUrl: 'https://korpstockdb-production.up.railway.app',
+  billingServiceUrl: 'https://korpbillingdb-production.up.railway.app',
 };

@@ -1,10 +1,11 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { RouterModule } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { InvoiceService, Invoice } from '../../shared/services/invoice.service';
 import { AiService } from '../../shared/services/ai.services';
 
@@ -22,12 +23,15 @@ import { AiService } from '../../shared/services/ai.services';
   templateUrl: './invoice-list.component.html',
   styleUrl: './invoice-list.component.scss',
 })
-export class InvoiceListComponent implements OnInit {
+export class InvoiceListComponent implements OnInit, OnDestroy {
   invoices: Invoice[] = [];
   displayedColumns = ['number', 'status', 'items', 'actions'];
-  loading = false;
+  loadingMap: Record<number, boolean> = {};
   error = '';
   aiSummary = '';
+  alertMessage: string | null = null;
+  alertType: 'success' | 'error' = 'success';
+  private destroy$ = new Subject<void>();
 
   constructor(
     private invoiceService: InvoiceService,
@@ -36,7 +40,7 @@ export class InvoiceListComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.invoiceService.getAll().subscribe({
+    this.invoiceService.getAll().pipe(takeUntil(this.destroy$)).subscribe({
       next: (data) => {
         this.invoices = data;
         this.cdr.detectChanges();
@@ -46,16 +50,17 @@ export class InvoiceListComponent implements OnInit {
   }
 
   print(id: number) {
-    this.loading = true;
+    this.loadingMap[id] = true;
     this.error = '';
     this.aiSummary = '';
-    this.invoiceService.print(id).subscribe({
+    this.invoiceService.print(id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (updated) => {
         const index = this.invoices.findIndex((i) => i.id === id);
         this.invoices[index] = updated;
         this.invoices = [...this.invoices];
-        this.loading = false;
-        this.aiService.summarizeInvoice(updated).subscribe({
+        this.loadingMap[id] = false;
+        this.showAlert('Nota fiscal fechada com sucesso!', 'success');
+        this.aiService.summarizeInvoice(updated).pipe(takeUntil(this.destroy$)).subscribe({
           next: (summary) => {
             this.aiSummary = summary;
             this.cdr.detectChanges();
@@ -65,9 +70,23 @@ export class InvoiceListComponent implements OnInit {
       },
       error: (err) => {
         this.error = err.error || 'Erro ao imprimir nota.';
-        this.loading = false;
+        this.loadingMap[id] = false;
         this.cdr.detectChanges();
       },
     });
+  }
+
+  showAlert(message: string, type: 'success' | 'error') {
+    this.alertMessage = message;
+    this.alertType = type;
+    setTimeout(() => {
+      this.alertMessage = null;
+      this.cdr.detectChanges();
+    }, 5000);
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

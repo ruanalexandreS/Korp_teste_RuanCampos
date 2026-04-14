@@ -41,9 +41,9 @@
                 <ng-container matColumnDef="actions">
                     <th mat-header-cell *matHeaderCellDef>Ações</th>
                     <td mat-cell *matCellDef="let inv">
-                        <button mat-raised-button color="accent" [disabled]="inv.status !== 'Aberta' || loading"
+                        <button mat-raised-button color="accent" [disabled]="inv.status !== 'Aberta' || loadingMap[inv.id]"
                             (click)="print(inv.id)">
-                            {{ loading ? 'Imprimindo...' : 'Imprimir' }}
+                            {{ loadingMap[inv.id] ? 'Imprimindo...' : 'Imprimir' }}
                         </button>
                     </td>
                 </ng-container>
@@ -57,6 +57,11 @@
             </p>
         </mat-card-content>
     </mat-card>
+
+    <div *ngIf="alertMessage" class="custom-alert" [ngClass]="alertType">
+        <span>{{ alertMessage }}</span>
+        <button mat-button (click)="alertMessage = null">Fechar</button>
+    </div>
 
     <mat-card *ngIf="aiSummary" style="margin-bottom: 16px; background: #e8f5e9">
         <mat-card-content style="display: flex; align-items: center; gap: 12px">

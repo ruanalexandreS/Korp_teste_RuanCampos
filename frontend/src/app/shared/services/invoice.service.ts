@@ -31,12 +31,11 @@ export class InvoiceService {
   }
 
   print(id: number) {
-    const key = `print-${id}-${Date.now()}`;
     return this.http.post<Invoice>(
       `${this.url}/${id}/print`,
       {},
       {
-        headers: { 'Idempotency-Key': key },
+        headers: { 'Idempotency-Key': `print-${id}` },
       },
     );
   }

@@ -3,5 +3,6 @@ interface ImportMeta {
 }
 
 interface ImportMetaEnv {
-  readonly NG_APP_GROQ_API_KEY: string;
+  readonly NG_APP_STOCK_URL: string;
+  readonly NG_APP_BILLING_URL: string;
 }
