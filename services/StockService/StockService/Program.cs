@@ -19,6 +19,9 @@ builder.Services.AddHttpClient<IGroqService, GroqService>(client =>
     client.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
 });
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
         policy
@@ -30,7 +33,12 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .WithExposedHeaders("Location", "Content-Type", "Authorization")));
 
+builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
+
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors();
 

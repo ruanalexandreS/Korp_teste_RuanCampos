@@ -1,3 +1,10 @@
+## 🔗 Links Rápidos
+| | |
+|---|---|
+| 🌐 **Frontend** | https://korp-teste-ruan-campos.vercel.app |
+| ⚙️ **StockService (Swagger)** | https://<seu-stock.railway.app>/swagger |
+| 🧾 **BillingService (Swagger)** | https://<seu-billing.railway.app>/swagger |
+
 # Korp NF — Sistema de Emissão de Notas Fiscais
 
 Teste técnico para vaga de Estágio de Desenvolvimento | C# + Angular — Korp Informática.
@@ -6,7 +13,7 @@ Teste técnico para vaga de Estágio de Desenvolvimento | C# + Angular — Korp 
 
 **Frontend**
 
-- Angular 17+ (Standalone Components, Zoneless)
+- Angular 17+ (Standalone Components, Zoneless via `provideZonelessChangeDetection()`)
 - Angular Material
 - RxJS (map, takeUntil, Subject, Observable)
 - TypeScript
@@ -38,7 +45,9 @@ Dois microsserviços independentes com bancos de dados separados:
 
 - .NET 8 SDK
 - Node.js 18+
-- Docker ou Podman
+- Docker ou Podman (docker-compose.yml compatível com ambos)
+
+> As migrations do Entity Framework já estão incluídas no repositório; o comando `database update` aplicará o esquema automaticamente.
 
 **1. Subir os bancos**
 
@@ -73,6 +82,9 @@ ng serve
 
 Acesse: http://localhost:4200
 
+## 🔒 Segurança
+As chaves da Groq API e Strings de Conexão são injetadas exclusivamente via Variáveis de Ambiente em produção (Railway), seguindo boas práticas do **12-Factor App**. Nenhuma credencial está exposta no repositório.
+
 ## Funcionalidades
 
 - Cadastro de produtos com código, descrição e saldo
@@ -85,6 +97,12 @@ Acesse: http://localhost:4200
 - Resumo da NF gerado por IA após impressão
 - Rollback de compensação (Saga): se um débito falhar, os anteriores são revertidos
 - Tratamento de falhas: mensagem amigável ao usuário quando StockService está indisponível
+
+## ⭐ Diferenciais Técnicos
+- **Rollback de Compensação (Saga Pattern):** se um débito de saldo falhar durante a impressão de NF com múltiplos produtos, todos os débitos anteriores são revertidos automaticamente
+- **Lock Pessimista (`SELECT ... FOR UPDATE`):** impede saldo negativo em requisições concorrentes no PostgreSQL
+- **Idempotência na Impressão:** segunda requisição de impressão da mesma NF é bloqueada sem efeito colateral
+- **3 Integrações de IA via Groq:** sugestão de descrição, alerta de estoque e resumo de NF — todas exclusivamente pelo backend
 
 ## Requisitos opcionais implementados
 
@@ -102,10 +120,10 @@ Acesse: http://localhost:4200
 
 **Tratamento de erros:** `try/catch` em todos os endpoints com retorno de `Results.BadRequest`, `Results.NotFound`, `Results.Conflict` e `Results.Problem` conforme o contexto; `logger.LogError` para rastreabilidade
 
-**Resiliência:** Polly com 3 tentativas e backoff exponencial (2s, 4s, 8s) nas chamadas HTTP entre microsserviços
+**Resiliência:** Polly com 3 tentativas e backoff exponencial (2s, 4s, 8s) nas chamadas HTTP entre microsserviços (Billing → Stock), protegendo a comunicação inter-serviços contra falhas transitórias
 
 **Idempotência:** chave de impressão fixa por nota; segunda requisição bloqueada no backend sem efeito colateral
 
 **Concorrência:** `SELECT ... FOR UPDATE` garante que dois requests simultâneos não causem saldo negativo
 
-**IA:** Groq API com modelo llama-3.3-70b-versatile para sugestão de descrição, alerta de estoque baixo e resumo de nota fiscal; chave de API exclusivamente no backend
+**IA:** Groq API com modelo llama-3.3-70b-versatile para sugestão de descrição, alerta de estoque baixo e resumo de nota fiscal; processamento assíncrono do ponto de vista do frontend (UX não bloqueante); chave de API exclusivamente no backend
