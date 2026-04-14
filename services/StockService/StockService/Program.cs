@@ -38,9 +38,12 @@ app.MapGet("/products", async (AppDbContext db) =>
 app.MapGet("/products/{id}", async (int id, AppDbContext db) =>
     await db.Products.FindAsync(id) is Product p ? Results.Ok(p) : Results.NotFound());
 
-// POST /products
+// POST /products - Cadastro de Produto
 app.MapPost("/products", async (Product product, AppDbContext db) =>
 {
+    if (string.IsNullOrWhiteSpace(product.Code))
+        return Results.BadRequest(new { error = "Código é obrigatório." });
+
     var exists = await db.Products.AnyAsync(p => p.Code == product.Code);
     if (exists)
         return Results.Conflict(new { error = $"Já existe um produto com o código '{product.Code}'" });
@@ -85,24 +88,24 @@ app.MapPut("/products/{id}/balance", async (int id, int quantity, AppDbContext d
 });
 
 // POST /api/products/suggest-description
-app.MapPost("/products", async (Product product, AppDbContext db) =>
+app.MapPost("/api/products/suggest-description", async (SuggestDescriptionRequest request, IGroqService groqService, ILogger<Program> logger) =>
 {
-    if (string.IsNullOrWhiteSpace(product.Code))
+    if (request is null || string.IsNullOrWhiteSpace(request.Code))
         return Results.BadRequest(new { error = "Código é obrigatório." });
 
-    if (string.IsNullOrWhiteSpace(product.Description))
-        return Results.BadRequest(new { error = "Descrição é obrigatória." });
+    try
+    {
+        var prompt = "Você é um assistente de cadastro de produtos. Gere uma descrição curta, clara e objetiva em português para um produto identificado pelo código a seguir. " +
+                     "Responda apenas com a descrição sugerida, sem explicações adicionais.\n\nCódigo: " + request.Code;
 
-    if (product.Balance < 0)
-        return Results.BadRequest(new { error = "Saldo não pode ser negativo." });
-
-    var exists = await db.Products.AnyAsync(p => p.Code == product.Code);
-    if (exists)
-        return Results.Conflict(new { error = $"Já existe um produto com o código '{product.Code}'" });
-
-    db.Products.Add(product);
-    await db.SaveChangesAsync();
-    return Results.Created($"/products/{product.Id}", product);
+        var description = await groqService.GenerateAsync(prompt);
+        return Results.Ok(new { description });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Erro ao sugerir descrição via IA");
+        return Results.Problem("Não foi possível sugerir a descrição no momento. Tente novamente mais tarde.", statusCode: 500);
+    }
 });
 
 // POST /api/products/check-low-stock
