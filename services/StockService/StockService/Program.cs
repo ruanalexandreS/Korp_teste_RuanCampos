@@ -1,8 +1,12 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StockService.Data;
 using StockService.Models;
 using StockService.Services;
 
+// Workaround: força resolução IPv4 para evitar falha de conexão no Npgsql quando
+// o host resolve para IPv6. Correção definitiva: fixar o IPv4 na connection string
+// (ex.: ";Host=<ipv4>") em vez de depender deste switch global.
 AppContext.SetSwitch("System.Net.Sockets.IPAddress.IPv6IsNotSupported", true);
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,7 +28,7 @@ builder.Services.AddCors(options =>
             )
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .WithExposedHeaders("*")));
+            .WithExposedHeaders("Location", "Content-Type", "Authorization")));
 
 var app = builder.Build();
 
@@ -53,8 +57,35 @@ app.MapPost("/products", async (Product product, AppDbContext db) =>
     return Results.Created($"/products/{product.Id}", product);
 });
 
+// PUT /products/{id} - Atualização genérica
+app.MapPut("/products/{id}", async (int id, Product input, AppDbContext db) =>
+{
+    var product = await db.Products.FindAsync(id);
+    if (product is null)
+        return Results.NotFound();
+
+    product.Code = input.Code;
+    product.Description = input.Description;
+    product.Balance = input.Balance;
+
+    await db.SaveChangesAsync();
+    return Results.Ok(product);
+});
+
+// DELETE /products/{id}
+app.MapDelete("/products/{id}", async (int id, AppDbContext db) =>
+{
+    var product = await db.Products.FindAsync(id);
+    if (product is null)
+        return Results.NotFound();
+
+    db.Products.Remove(product);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
 // PUT /products/{id}/balance
-app.MapPut("/products/{id}/balance", async (int id, int quantity, AppDbContext db) =>
+app.MapPut("/products/{id}/balance", async (int id, [FromQuery] int quantity, AppDbContext db, ILogger<Program> logger) =>
 {
     await using var transaction = await db.Database.BeginTransactionAsync();
     try
@@ -80,9 +111,10 @@ app.MapPut("/products/{id}/balance", async (int id, int quantity, AppDbContext d
         await transaction.CommitAsync();
         return Results.Ok(product);
     }
-    catch
+    catch (Exception ex)
     {
         await transaction.RollbackAsync();
+        logger.LogError(ex, "Erro ao atualizar saldo do produto {ProductId}", id);
         return Results.Problem("Erro ao atualizar saldo.");
     }
 });
