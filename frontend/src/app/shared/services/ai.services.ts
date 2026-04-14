@@ -9,11 +9,11 @@ export class AiService {
 
   suggestDescription(code: string): Observable<string> {
     return this.http
-      .post<{ suggestion: string }>(
+      .post<{ description: string }>(
         `${environment.stockServiceUrl}/api/products/suggest-description`,
         { code },
       )
-      .pipe(map((res) => res.suggestion));
+      .pipe(map((res) => res.description));
   }
 
   summarizeInvoice(invoice: any): Observable<string> {
